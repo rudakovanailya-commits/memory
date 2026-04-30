@@ -285,6 +285,60 @@
       margin-top: 4px;
     }
 
+    .rec-card {
+      display: flex;
+      align-items: stretch;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .rec-card .rec-item-main {
+      flex: 1;
+      margin-bottom: 0;
+      min-width: 0;
+    }
+
+    .rec-item-delete {
+      flex-shrink: 0;
+      align-self: center;
+      min-height: 48px;
+      padding: 0 12px;
+      max-width: 96px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(196, 92, 92, 0.35);
+      background: rgba(196, 92, 92, 0.08);
+      color: var(--record);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .rec-item-delete:active {
+      background: rgba(196, 92, 92, 0.16);
+      transform: scale(0.98);
+    }
+
+    .btn-client-delete {
+      width: 100%;
+      margin-top: 24px;
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(196, 92, 92, 0.35);
+      background: transparent;
+      color: var(--record);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .btn-client-delete:active {
+      background: rgba(196, 92, 92, 0.1);
+    }
+
     .fab {
       position: absolute;
       right: 18px;
@@ -715,6 +769,7 @@
         <p class="section-label">Записи сессий</p>
         <div id="client-recordings"></div>
         <p class="empty-hint" id="client-recordings-empty" hidden>Записей пока нет</p>
+        <button type="button" class="btn-client-delete" id="btn-delete-client">Удалить клиента</button>
       </div>
       <button type="button" class="fab" id="fab-comments" aria-label="Комментарии">+</button>
     </div>
@@ -1045,7 +1100,10 @@
 
       function saveData() {
         try {
-          lsSet(DATA_KEY, JSON.stringify(data));
+          localStorage.setItem(
+            "second_memory_v2",
+            JSON.stringify(data)
+          );
         } catch (e) {
           console.warn("Не удалось сохранить данные:", e);
         }
@@ -1180,6 +1238,40 @@
         return data.clients.find((c) => c.id === id);
       }
 
+      function closePlaybackDialog() {
+        const da = $("play-dialog-audio");
+        if (!da) return;
+        da.pause();
+        da.removeAttribute("src");
+        da.load?.();
+        Players.dialog.sync();
+        $("play-dialog").close();
+      }
+
+      /** Удалить сохранённую запись; обновляет data, localStorage и экран клиента */
+      function deleteRecordingFromClient(clientId, recordingId) {
+        const c = getClient(clientId);
+        if (!c) return false;
+        const ix = c.recordings.findIndex((r) => r.id === recordingId);
+        if (ix < 0) return false;
+        c.recordings.splice(ix, 1);
+        saveData();
+        renderClient(clientId);
+        return true;
+      }
+
+      /** Удалить клиента, сохранить, перейти к списку «Все клиенты» и перерисовать */
+      function deleteCurrentClientNavigateToAll(clientId) {
+        const ix = data.clients.findIndex((c) => c.id === clientId);
+        if (ix < 0) return false;
+        data.clients.splice(ix, 1);
+        saveData();
+        closePlaybackDialog();
+        navStack = [{ name: "home" }, { name: "clients_all" }];
+        render();
+        return true;
+      }
+
       function filterClients(q) {
         const s = q.trim().toLowerCase();
         if (!s) return [];
@@ -1299,12 +1391,14 @@
             .slice()
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .forEach((r) => {
+              const row = document.createElement("div");
+              row.className = "rec-card";
+
               const b = document.createElement("button");
               b.type = "button";
-              b.className = "rec-item";
-              const com = r.comment.trim();
-              b.innerHTML =
-                '<div class="t"></div><div class="d"></div>';
+              b.className = "rec-item rec-item-main";
+              const com = (r.comment || "").trim();
+              b.innerHTML = '<div class="t"></div><div class="d"></div>';
               b.querySelector(".t").textContent = formatWhen(r.createdAt);
               b.querySelector(".d").textContent = com || "Без комментария";
               b.addEventListener("click", () => {
@@ -1315,7 +1409,22 @@
                 $("play-dialog").showModal();
                 da.play().catch(() => {});
               });
-              list.appendChild(b);
+
+              const del = document.createElement("button");
+              del.type = "button";
+              del.className = "rec-item-delete";
+              del.textContent = "Удалить";
+              del.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!confirm("Удалить запись?")) return;
+                closePlaybackDialog();
+                deleteRecordingFromClient(clientId, r.id);
+              });
+
+              row.appendChild(b);
+              row.appendChild(del);
+              list.appendChild(row);
             });
         }
       }
@@ -1337,6 +1446,13 @@
       $("fab-comments").addEventListener("click", () => {
         const f = currentFrame();
         if (f.name === "client") pushFrame("comments", { clientId: f.clientId });
+      });
+
+      $("btn-delete-client").addEventListener("click", () => {
+        const f = currentFrame();
+        if (f.name !== "client" || !f.clientId) return;
+        if (!confirm("Удалить клиента и все записи?")) return;
+        deleteCurrentClientNavigateToAll(f.clientId);
       });
 
       function cleanupRecording() {
@@ -1513,16 +1629,26 @@
       });
 
       $("btn-rec-delete").addEventListener("click", () => {
-        if (recordedChunks.length === 0 && (!recAudio || !recAudio.src)) {
-          popFrame();
+        const f = currentFrame();
+        if (f.name !== "recording" || !f.clientId) return;
+
+        const hasDraft =
+          isRecording ||
+          recordedChunks.length > 0 ||
+          Boolean(recAudio && recAudio.getAttribute("src"));
+
+        if (!hasDraft) {
           cleanupRecording();
+          popFrame();
           return;
         }
-        if (!confirm("Удалить текущую запись? Несохранённые данные будут потеряны.")) return;
+
+        if (!confirm("Удалить запись?")) return;
+
         cleanupRecording();
         isRecording = false;
         elapsedMs = 0;
-        prepareRecording(currentFrame().clientId);
+        prepareRecording(f.clientId);
       });
 
       $("btn-rec-save").addEventListener("click", () => {
