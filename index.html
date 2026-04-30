@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#e8e6f0" />
+  <title>Вторая память</title>
+  <style>
+    :root {
+      --bg: #e8e6f0;
+      --bg-deep: #ddd8e8;
+      --surface: #faf9fc;
+      --card: #ffffff;
+      --text: #2a2838;
+      --muted: #7a7689;
+      --line: rgba(42, 40, 56, 0.08);
+      --primary: #6b6a9e;
+      --primary-press: #585787;
+      --record: #c45c5c;
+      --record-glow: rgba(196, 92, 92, 0.35);
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 22px;
+      --shadow: 0 4px 20px rgba(42, 40, 56, 0.06);
+      --shadow-card: 0 2px 12px rgba(42, 40, 56, 0.05);
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.45;
+      color: var(--text);
+      background: var(--bg-deep);
+    }
+
+    /* «Устройство» на десктопе */
+    .device {
+      max-width: 420px;
+      margin: 0 auto;
+      height: 100%;
+      min-height: 100dvh;
+      background: var(--bg);
+      box-shadow: 0 0 0 1px var(--line), 0 12px 48px rgba(42, 40, 56, 0.12);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    #btn-enter {
+      position: relative;
+      z-index: 2;
+      touch-action: manipulation;
+    }
+
+    .app-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: calc(10px + var(--safe-top)) 12px 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .app-bar h1 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 600;
+      flex: 1;
+      text-align: center;
+      padding-right: 40px;
+    }
+
+    .app-bar h1.no-back {
+      padding-right: 0;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--text);
+      font-size: 1.25rem;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .icon-btn:active {
+      background: var(--line);
+    }
+
+    .scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 16px 16px calc(24px + var(--safe-bottom));
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 14px 18px;
+      font: inherit;
+      font-weight: 500;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: transform 0.08s ease, background 0.15s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:active {
+      background: var(--primary-press);
+    }
+
+    .btn-secondary {
+      background: var(--card);
+      color: var(--text);
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--line);
+    }
+
+    .btn-danger {
+      background: rgba(196, 92, 92, 0.12);
+      color: var(--record);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .search-wrap {
+      background: var(--card);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+      padding: 4px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      border: 1px solid var(--line);
+    }
+
+    .search-wrap input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font: inherit;
+      padding: 12px 0;
+      outline: none;
+      color: var(--text);
+    }
+
+    .search-wrap input::placeholder {
+      color: var(--muted);
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--line);
+      padding: 16px 18px;
+    }
+
+    .card-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .card-row .name {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .chevron {
+      color: var(--muted);
+      font-size: 1.2rem;
+    }
+
+    .stack-gap {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 8px 4px 10px;
+    }
+
+    .big-action {
+      padding: 18px 20px;
+      font-size: 1.05rem;
+      border-radius: var(--radius-lg);
+      margin-bottom: 20px;
+    }
+
+    .client-hero {
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .client-hero .name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .client-hero .sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 6px 0 0;
+    }
+
+    .rec-item {
+      width: 100%;
+      text-align: left;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--card);
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .rec-item .t {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .rec-item .d {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .fab {
+      position: absolute;
+      right: 18px;
+      bottom: calc(18px + var(--safe-bottom));
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      font-size: 28px;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 6px 24px rgba(107, 106, 158, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .fab:active {
+      transform: scale(0.95);
+    }
+
+    .screen-client {
+      position: relative;
+    }
+
+    .timer {
+      font-variant-numeric: tabular-nums;
+      font-size: 2.5rem;
+      font-weight: 300;
+      text-align: center;
+      margin: 24px 0 8px;
+      letter-spacing: 0.04em;
+    }
+
+    .rec-circle-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0 28px;
+    }
+
+    .rec-circle {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      border: none;
+      background: var(--record);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 0 0 0 var(--record-glow);
+      transition: box-shadow 0.3s;
+    }
+
+    .rec-circle.recording {
+      animation: pulse 1.4s ease infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 var(--record-glow); }
+      50% { box-shadow: 0 0 0 16px transparent; }
+    }
+
+    .player-bar {
+      background: var(--card);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      border: 1px solid var(--line);
+      margin-bottom: 16px;
+    }
+
+    .custom-player-label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* Скрытый нативный audio — только движок декодирования */
+    .custom-player-native {
+      position: absolute;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      padding: 0;
+      border: 0;
+      white-space: nowrap;
+    }
+
+    .custom-player {
+      position: relative;
+    }
+
+    .cap-times {
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      font-size: 15px;
+      color: var(--text);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .cap-times .cap-muted {
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .cap-seek {
+      width: 100%;
+      height: 10px;
+      margin: 14px 0 18px;
+      accent-color: var(--primary);
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    .cap-seek:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .cap-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(14px, 5vw, 24px);
+    }
+
+    .cap-skip {
+      flex: 0 0 auto;
+      min-width: 64px;
+      height: 52px;
+      padding: 0 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .cap-skip:active {
+      transform: scale(0.97);
+      background: #f3f2f8;
+    }
+
+    .cap-skip:disabled {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .cap-main {
+      flex: 0 0 auto;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      font-size: 1.65rem;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(107, 106, 158, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      padding-left: 4px;
+    }
+
+    .cap-main.is-pause {
+      padding-left: 0;
+      letter-spacing: 2px;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .cap-main:active {
+      transform: scale(0.96);
+      background: var(--primary-press);
+    }
+
+    .cap-main:disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .dialog-player-margin {
+      margin-bottom: 16px;
+    }
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .field textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      font: inherit;
+      resize: vertical;
+      background: var(--card);
+      color: var(--text);
+    }
+
+    .row-btns {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .row-btns .btn {
+      flex: 1;
+    }
+
+    .note-item {
+      padding: 14px 16px;
+      background: var(--card);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .note-item .time {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .note-item .text {
+      white-space: pre-wrap;
+      font-size: 15px;
+    }
+
+    .screen.onboarding {
+      position: relative;
+      z-index: 1;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 32px 28px calc(32px + var(--safe-bottom));
+    }
+
+    .onboarding .logo {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin: 0 0 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .onboarding .tag {
+      color: var(--muted);
+      font-size: 15px;
+      margin: 0 0 40px;
+      max-width: 280px;
+      line-height: 1.5;
+    }
+
+    .onboarding .btn {
+      max-width: 280px;
+    }
+
+    .empty-hint {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      padding: 28px 16px;
+    }
+
+    dialog {
+      border: none;
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      max-width: calc(100% - 32px);
+      width: 360px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    dialog::backdrop {
+      background: rgba(42, 40, 56, 0.35);
+    }
+
+    .modal-btns {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .modal-btns .btn {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="device">
+    <!-- 1. Онбординг -->
+    <div id="screen-onboarding" class="screen active onboarding">
+      <div>
+        <p class="logo">Вторая память</p>
+        <p class="tag">Записи сессий и заметки — всё под рукой, только на вашем устройстве.</p>
+        <button type="button" class="btn btn-primary" id="btn-enter" onclick="window.smDoEnter&&window.smDoEnter();">Войти</button>
+      </div>
+    </div>
+
+    <!-- 2. Главный -->
+    <div id="screen-home" class="screen">
+      <header class="app-bar">
+        <span style="width:40px"></span>
+        <h1 class="no-back">Главная</h1>
+      </header>
+      <div class="scroll">
+        <div class="search-wrap">
+          <span style="color:var(--muted)">⌕</span>
+          <input type="search" id="home-search" placeholder="Поиск клиента" autocomplete="off" />
+        </div>
+        <div id="home-results" class="stack-gap" hidden></div>
+        <div id="home-default" class="stack-gap">
+          <button type="button" class="btn btn-secondary" id="btn-create-client">Создать клиента</button>
+          <button type="button" class="btn btn-secondary" id="btn-all-clients">Все клиенты</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Все клиенты -->
+    <div id="screen-clients-all" class="screen">
+      <header class="app-bar">
+        <button type="button" class="icon-btn" data-back aria-label="Назад">‹</button>
+        <h1>Клиенты</h1>
+      </header>
+      <div class="scroll">
+        <div id="clients-all-list" class="stack-gap"></div>
+        <p class="empty-hint" id="clients-all-empty" hidden>Клиентов пока нет</p>
+      </div>
+    </div>
+
+    <!-- 4. Клиент -->
+    <div id="screen-client" class="screen screen-client">
+      <header class="app-bar">
+        <button type="button" class="icon-btn" data-back aria-label="Назад">‹</button>
+        <h1>Клиент</h1>
+      </header>
+      <div class="scroll">
+        <div class="card client-hero">
+          <p class="name" id="client-name-display"></p>
+          <p class="sub" id="client-meta-display"></p>
+        </div>
+        <button type="button" class="btn btn-primary big-action" id="btn-new-recording">Новая запись</button>
+        <p class="section-label">Записи сессий</p>
+        <div id="client-recordings"></div>
+        <p class="empty-hint" id="client-recordings-empty" hidden>Записей пока нет</p>
+      </div>
+      <button type="button" class="fab" id="fab-comments" aria-label="Комментарии">+</button>
+    </div>
+
+    <!-- 5. Запись -->
+    <div id="screen-recording" class="screen">
+      <header class="app-bar">
+        <button type="button" class="icon-btn" data-back aria-label="Назад">‹</button>
+        <h1>Запись</h1>
+      </header>
+      <div class="scroll">
+        <p style="text-align:center;color:var(--muted);margin:0;font-size:14px" id="recording-client-label"></p>
+        <div class="timer" id="rec-timer">00:00</div>
+        <div class="rec-circle-wrap">
+          <button type="button" class="rec-circle" id="btn-rec-toggle">Запись</button>
+        </div>
+        <div class="player-bar custom-player">
+          <label class="custom-player-label" for="rec-cap-range">Прослушивание</label>
+          <audio id="rec-audio" preload="metadata" aria-hidden="true" class="custom-player-native"></audio>
+          <div id="rec-player-controls">
+            <div class="cap-times" id="rec-cap-times"><span id="rec-cap-t1">0:00</span><span class="cap-muted"> / </span><span id="rec-cap-t2">0:00</span></div>
+            <input type="range" id="rec-cap-range" class="cap-seek" min="0" max="1000" value="0" step="any" aria-label="Прогресс воспроизведения" disabled />
+            <div class="cap-row">
+              <button type="button" class="cap-skip" id="rec-cap-minus">−10 с</button>
+              <button type="button" class="cap-main" id="rec-cap-play" aria-label="Воспроизвести" disabled>&#9654;</button>
+              <button type="button" class="cap-skip" id="rec-cap-plus">+10 с</button>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="rec-comment">Комментарий к записи</label>
+          <textarea id="rec-comment" placeholder="Кратко: тема сессии, наблюдения…"></textarea>
+        </div>
+        <div class="row-btns">
+          <button type="button" class="btn btn-danger" id="btn-rec-delete">Удалить</button>
+          <button type="button" class="btn btn-primary" id="btn-rec-save" disabled>Сохранить</button>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:20px;line-height:1.4">
+          Аудио и текст хранятся только в браузере (localStorage). Длинные записи могут не сохраниться из‑за лимита памяти.
+        </p>
+      </div>
+    </div>
+
+    <!-- 6. Комментарии -->
+    <div id="screen-comments" class="screen">
+      <header class="app-bar">
+        <button type="button" class="icon-btn" data-back aria-label="Назад">‹</button>
+        <h1>Комментарии</h1>
+      </header>
+      <div class="scroll">
+        <div id="comments-list"></div>
+        <p class="empty-hint" id="comments-empty" hidden>Комментариев пока нет</p>
+        <p class="section-label" style="margin-top:20px">Новый комментарий</p>
+        <div class="field">
+          <textarea id="comments-new" placeholder="Введите текст…"></textarea>
+        </div>
+        <button type="button" class="btn btn-primary" id="btn-comments-save">Сохранить</button>
+      </div>
+    </div>
+
+    <dialog id="play-dialog">
+      <p style="margin:0 0 14px;font-weight:600;font-size:1rem">Запись</p>
+      <div id="dialog-player-root" class="custom-player dialog-player-margin">
+        <audio id="play-dialog-audio" preload="metadata" aria-hidden="true" class="custom-player-native"></audio>
+        <div class="cap-times" id="dialog-cap-times"><span id="dialog-cap-t1">0:00</span><span class="cap-muted"> / </span><span id="dialog-cap-t2">0:00</span></div>
+        <input type="range" id="dialog-cap-range" class="cap-seek" min="0" max="1000" value="0" step="any" aria-label="Прогресс воспроизведения" disabled />
+        <div class="cap-row">
+          <button type="button" class="cap-skip" id="dialog-cap-minus">−10 с</button>
+          <button type="button" class="cap-main" id="dialog-cap-play" aria-label="Воспроизвести" disabled>&#9654;</button>
+          <button type="button" class="cap-skip" id="dialog-cap-plus">+10 с</button>
+        </div>
+      </div>
+      <button type="button" class="btn btn-secondary" style="width:100%;padding:12px;margin-top:4px" id="play-dialog-close">Закрыть</button>
+    </dialog>
+
+    <dialog id="new-client-dialog">
+      <p style="margin:0 0 12px;font-weight:600">Новый клиент</p>
+      <input type="text" id="new-client-input" placeholder="Имя" maxlength="120"
+        style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);font:inherit" />
+      <div class="modal-btns">
+        <button type="button" class="btn btn-secondary" id="new-client-cancel">Отмена</button>
+        <button type="button" class="btn btn-primary" id="new-client-ok">Создать</button>
+      </div>
+    </dialog>
+  </div>
+
+  <script>
+    (function () {
+      const DATA_KEY = "second_memory_v2";
+      const SESSION_KEY = "sm_logged_in";
+
+      /** @type {{ clients: Array<{ id: string, name: string, recordings: Array<{ id: string, audioDataUrl: string, mimeType: string, createdAt: string, comment: string }>, notes: Array<{ id: string, text: string, createdAt: string }> }> }} */
+      let data = { clients: [] };
+
+      /** @type {Array<{ name: string, clientId?: string }>} */
+      let navStack = [{ name: "onboarding" }];
+
+      let mediaRecorder = null;
+      let recordedChunks = [];
+      let recordedMime = "audio/webm";
+      let objectUrlToRevoke = null;
+      let timerInterval = null;
+      let recStartMs = 0;
+      let elapsedMs = 0;
+      let discardRecordingDraft = false;
+
+      const $ = (id) => document.getElementById(id);
+
+      const recAudio = $("rec-audio");
+
+      const Players = { rec: null, dialog: null };
+
+      function formatAudioTime(sec) {
+        if (!Number.isFinite(sec) || sec < 0) sec = 0;
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return m + ":" + String(s).padStart(2, "0");
+      }
+
+      /** @param ui {{ tCurrent: HTMLElement, tTotal: HTMLElement, range: HTMLInputElement, btnMinus: HTMLButtonElement, btnPlus: HTMLButtonElement, btnMain: HTMLButtonElement }} */
+      function attachCustomAudioPlayer(audio, ui) {
+        const { tCurrent, tTotal, range, btnMinus, btnPlus, btnMain } = ui;
+
+        let tickTimer = null;
+        let scrubbing = false;
+
+        function stopTick() {
+          if (tickTimer !== null) {
+            clearInterval(tickTimer);
+            tickTimer = null;
+          }
+        }
+
+        function startTick() {
+          stopTick();
+          tickTimer = setInterval(sync, 200);
+        }
+
+        function sync() {
+          const cur = audio.currentTime || 0;
+          const dur = audio.duration;
+          const durOk = Number.isFinite(dur) && dur > 0;
+
+          tCurrent.textContent = formatAudioTime(cur);
+          tTotal.textContent = formatAudioTime(durOk ? dur : 0);
+
+          const hasSrc = !!audio.getAttribute("src");
+
+          range.disabled = !durOk;
+          btnMain.disabled = !hasSrc;
+          btnMinus.disabled = !hasSrc;
+          btnPlus.disabled = !hasSrc || !durOk;
+
+          if (!scrubbing && durOk) {
+            const v = Math.min(1000, Math.max(0, (cur / dur) * 1000));
+            range.value = String(v);
+          }
+          if (!durOk && !scrubbing) range.value = "0";
+
+          if (audio.paused) {
+            stopTick();
+            btnMain.textContent = "\u25B6";
+            btnMain.style.paddingLeft = "6px";
+            btnMain.classList.remove("is-pause");
+            btnMain.setAttribute("aria-label", "Воспроизвести");
+          } else {
+            btnMain.textContent = "\u23F8";
+            btnMain.style.paddingLeft = "0";
+            btnMain.classList.add("is-pause");
+            btnMain.setAttribute("aria-label", "Пауза");
+          }
+        }
+
+        function onEnded() {
+          audio.pause();
+          audio.currentTime = 0;
+          stopTick();
+          scrubbing = false;
+          sync();
+        }
+
+        audio.addEventListener("play", () => {
+          startTick();
+          sync();
+        });
+        audio.addEventListener("pause", () => {
+          stopTick();
+          sync();
+        });
+        audio.addEventListener("ended", onEnded);
+        audio.addEventListener("loadedmetadata", sync);
+        audio.addEventListener("durationchange", sync);
+
+        btnMain.addEventListener("click", () => {
+          if (!audio.getAttribute("src")) return;
+          if (audio.paused) audio.play().catch(() => {});
+          else audio.pause();
+        });
+
+        btnMinus.addEventListener("click", () => {
+          audio.currentTime = Math.max(0, audio.currentTime - 10);
+          sync();
+        });
+
+        btnPlus.addEventListener("click", () => {
+          const d = audio.duration;
+          const lim = Number.isFinite(d) && d > 0 ? d : audio.currentTime + 10;
+          audio.currentTime = Math.min(lim, audio.currentTime + 10);
+          sync();
+        });
+
+        range.addEventListener("pointerdown", () => {
+          scrubbing = true;
+        });
+
+        window.addEventListener(
+          "pointerup",
+          function capPtrUp() {
+            if (!scrubbing) return;
+            scrubbing = false;
+            sync();
+          },
+          true
+        );
+
+        range.addEventListener("pointercancel", () => {
+          scrubbing = false;
+          sync();
+        });
+
+        range.addEventListener("input", () => {
+          const dur = audio.duration;
+          if (!Number.isFinite(dur) || dur <= 0) return;
+          const pct = Number(range.value);
+          audio.currentTime = (pct / 1000) * dur;
+          tCurrent.textContent = formatAudioTime(audio.currentTime);
+        });
+
+        sync();
+
+        return { sync };
+      }
+
+      Players.rec = attachCustomAudioPlayer(recAudio, {
+        tCurrent: $("rec-cap-t1"),
+        tTotal: $("rec-cap-t2"),
+        range: $("rec-cap-range"),
+        btnMinus: $("rec-cap-minus"),
+        btnPlus: $("rec-cap-plus"),
+        btnMain: $("rec-cap-play"),
+      });
+
+      Players.dialog = attachCustomAudioPlayer($("play-dialog-audio"), {
+        tCurrent: $("dialog-cap-t1"),
+        tTotal: $("dialog-cap-t2"),
+        range: $("dialog-cap-range"),
+        btnMinus: $("dialog-cap-minus"),
+        btnPlus: $("dialog-cap-plus"),
+        btnMain: $("dialog-cap-play"),
+      });
+
+      /** Сессия без localStorage (file:// с блокировкой, приватность) — только до перезагрузки */
+      let sessionLoggedVolatile = false;
+
+      function lsGet(key) {
+        try {
+          return localStorage.getItem(key);
+        } catch (e) {
+          console.warn("localStorage недоступно:", e);
+          return null;
+        }
+      }
+
+      function lsSet(key, val) {
+        try {
+          localStorage.setItem(key, val);
+          return true;
+        } catch (e) {
+          console.warn("localStorage недоступно:", e);
+          return false;
+        }
+      }
+
+      function lsRemove(key) {
+        try {
+          localStorage.removeItem(key);
+        } catch (_) {}
+      }
+
+      function loadData() {
+        try {
+          const raw = lsGet(DATA_KEY);
+          if (raw) {
+            const p = JSON.parse(raw);
+            if (p && Array.isArray(p.clients)) {
+              data = p;
+              data.clients.forEach((c) => {
+                if (!Array.isArray(c.notes)) c.notes = [];
+              });
+              return;
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        tryMigrateV1();
+        data = { clients: data.clients || [] };
+      }
+
+      function tryMigrateV1() {
+        try {
+          const old = lsGet("psych_client_records_v1");
+          if (!old) return;
+          const p = JSON.parse(old);
+          if (!p || !Array.isArray(p.clients)) return;
+          data.clients = p.clients.map((c) => ({
+            id: c.id,
+            name: c.name,
+            recordings: c.recordings || [],
+            notes: [],
+          }));
+          saveData();
+          lsRemove("psych_client_records_v1");
+        } catch (_) {}
+      }
+
+      function saveData() {
+        try {
+          lsSet(DATA_KEY, JSON.stringify(data));
+        } catch (e) {
+          console.warn("Не удалось сохранить данные:", e);
+        }
+      }
+
+      function isLoggedIn() {
+        if (sessionLoggedVolatile) return true;
+        try {
+          return lsGet(SESSION_KEY) === "1";
+        } catch (_) {
+          return false;
+        }
+      }
+
+      function setLoggedIn(v) {
+        if (v) {
+          sessionLoggedVolatile = lsSet(SESSION_KEY, "1") ? false : true;
+        } else {
+          sessionLoggedVolatile = false;
+          lsRemove(SESSION_KEY);
+        }
+      }
+
+      function uid() {
+        return "x" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      }
+
+      function currentFrame() {
+        return navStack[navStack.length - 1];
+      }
+
+      function pushFrame(name, extra) {
+        navStack.push({ name, ...extra });
+        render();
+      }
+
+      function popFrame() {
+        if (navStack.length <= 1) return;
+        navStack.pop();
+        render();
+      }
+
+      function activateScreen(domSuffixRaw) {
+        const suffix =
+          typeof domSuffixRaw === "string"
+            ? domSuffixRaw.replace(/_/g, "-")
+            : "onboarding";
+        const targetId = "screen-" + suffix;
+        document.querySelectorAll(".screen").forEach((el) => {
+          el.classList.remove("active");
+        });
+        const tgt = document.getElementById(targetId);
+        if (tgt) {
+          tgt.classList.add("active");
+        } else {
+          console.error("Неизвестный экран:", targetId);
+          const fb = document.getElementById("screen-onboarding");
+          if (fb) fb.classList.add("active");
+        }
+      }
+
+      function render() {
+        const frame = currentFrame() || { name: "onboarding" };
+        const screenKey = frame.name || "onboarding";
+        const idMap = {
+          onboarding: "onboarding",
+          home: "home",
+          clients_all: "clients-all",
+          client: "client",
+          recording: "recording",
+          comments: "comments",
+        };
+        const domId =
+          idMap[screenKey] || String(screenKey).replace(/_/g, "-");
+        activateScreen(domId);
+
+        try {
+          if (screenKey === "home") renderHome();
+          if (screenKey === "clients_all") renderClientsAll();
+          if (screenKey === "client") renderClient(frame.clientId);
+          if (screenKey === "recording") prepareRecording(frame.clientId);
+          if (screenKey === "comments") renderComments(frame.clientId);
+        } catch (err) {
+          console.error("Ошибка отрисовки экрана:", screenKey, err);
+        }
+      }
+
+      function enterApp() {
+        try {
+          setLoggedIn(true);
+          navStack = [{ name: "home" }];
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      window.smDoEnter = enterApp;
+
+      function initNav() {
+        if (isLoggedIn()) {
+          navStack = [{ name: "home" }];
+        } else {
+          navStack = [{ name: "onboarding" }];
+        }
+        render();
+      }
+
+      loadData();
+      initNav();
+
+      document.querySelectorAll("[data-back]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (currentFrame().name === "recording") {
+            cleanupRecording();
+          }
+          popFrame();
+        });
+      });
+
+      const btnEnter = $("btn-enter");
+      if (!btnEnter) {
+        console.error("Не найдена кнопка входа (#btn-enter)");
+      } else {
+        btnEnter.addEventListener("click", function (e) {
+          e.preventDefault();
+          enterApp();
+        });
+      }
+
+      function getClient(id) {
+        return data.clients.find((c) => c.id === id);
+      }
+
+      function filterClients(q) {
+        const s = q.trim().toLowerCase();
+        if (!s) return [];
+        return data.clients.filter((c) => c.name.toLowerCase().includes(s));
+      }
+
+      function renderHome() {
+        const searchEl = $("home-search");
+        const def = $("home-default");
+        const res = $("home-results");
+        if (!searchEl || !def || !res) {
+          console.warn("Главный экран: не найдены элементы DOM");
+          return;
+        }
+        const q = searchEl.value;
+        const results = filterClients(q);
+        if (q.trim() && results.length) {
+          def.hidden = true;
+          res.hidden = false;
+          res.innerHTML = "";
+          results
+            .sort((a, b) => a.name.localeCompare(b.name, "ru"))
+            .forEach((c) => {
+              const b = document.createElement("button");
+              b.type = "button";
+              b.className = "card card-row";
+              b.innerHTML = '<span class="name"></span><span class="chevron">›</span>';
+              b.querySelector(".name").textContent = c.name;
+              b.addEventListener("click", () => pushFrame("client", { clientId: c.id }));
+              res.appendChild(b);
+            });
+        } else if (q.trim()) {
+          def.hidden = true;
+          res.hidden = false;
+          res.innerHTML = '<p class="empty-hint">Никого не найдено</p>';
+        } else {
+          def.hidden = false;
+          res.hidden = true;
+        }
+      }
+
+      $("home-search").addEventListener("input", renderHome);
+
+      $("btn-all-clients").addEventListener("click", () => pushFrame("clients_all"));
+
+      $("btn-create-client").addEventListener("click", () => {
+        $("new-client-input").value = "";
+        $("new-client-dialog").showModal();
+      });
+
+      $("new-client-cancel").addEventListener("click", () => $("new-client-dialog").close());
+      $("new-client-ok").addEventListener("click", () => {
+        const name = $("new-client-input").value.trim();
+        if (!name) return;
+        const c = { id: uid(), name, recordings: [], notes: [] };
+        data.clients.push(c);
+        saveData();
+        $("new-client-dialog").close();
+        pushFrame("client", { clientId: c.id });
+      });
+
+      function renderClientsAll() {
+        const wrap = $("clients-all-list");
+        const empty = $("clients-all-empty");
+        wrap.innerHTML = "";
+        if (data.clients.length === 0) {
+          empty.hidden = false;
+          return;
+        }
+        empty.hidden = true;
+        data.clients
+          .slice()
+          .sort((a, b) => a.name.localeCompare(b.name, "ru"))
+          .forEach((c) => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "card card-row";
+            b.innerHTML = '<span class="name"></span><span class="chevron">›</span>';
+            b.querySelector(".name").textContent = c.name;
+            b.addEventListener("click", () => pushFrame("client", { clientId: c.id }));
+            wrap.appendChild(b);
+          });
+      }
+
+      function formatWhen(iso) {
+        try {
+          return new Date(iso).toLocaleString("ru-RU", {
+            day: "numeric",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        } catch {
+          return "";
+        }
+      }
+
+      function renderClient(clientId) {
+        const c = getClient(clientId);
+        if (!c) {
+          popFrame();
+          return;
+        }
+        $("client-name-display").textContent = c.name;
+        const n = c.recordings.length;
+        $("client-meta-display").textContent =
+          n === 0 ? "Нет записей" : n + " " + pluralRec(n);
+
+        const list = $("client-recordings");
+        list.innerHTML = "";
+        const empty = $("client-recordings-empty");
+        if (c.recordings.length === 0) {
+          empty.hidden = false;
+        } else {
+          empty.hidden = true;
+          c.recordings
+            .slice()
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .forEach((r) => {
+              const b = document.createElement("button");
+              b.type = "button";
+              b.className = "rec-item";
+              const com = r.comment.trim();
+              b.innerHTML =
+                '<div class="t"></div><div class="d"></div>';
+              b.querySelector(".t").textContent = formatWhen(r.createdAt);
+              b.querySelector(".d").textContent = com || "Без комментария";
+              b.addEventListener("click", () => {
+                const da = $("play-dialog-audio");
+                da.pause();
+                da.src = r.audioDataUrl;
+                Players.dialog.sync();
+                $("play-dialog").showModal();
+                da.play().catch(() => {});
+              });
+              list.appendChild(b);
+            });
+        }
+      }
+
+      function pluralRec(n) {
+        const m10 = n % 10;
+        const m100 = n % 100;
+        if (m100 >= 11 && m100 <= 14) return "записей";
+        if (m10 === 1) return "запись";
+        if (m10 >= 2 && m10 <= 4) return "записи";
+        return "записей";
+      }
+
+      $("btn-new-recording").addEventListener("click", () => {
+        const f = currentFrame();
+        if (f.name === "client") pushFrame("recording", { clientId: f.clientId });
+      });
+
+      $("fab-comments").addEventListener("click", () => {
+        const f = currentFrame();
+        if (f.name === "client") pushFrame("comments", { clientId: f.clientId });
+      });
+
+      function cleanupRecording() {
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        isRecording = false;
+        const mr = mediaRecorder;
+
+        if (mr && mr.state === "recording") {
+          discardRecordingDraft = true;
+          mr.stop();
+          return;
+        }
+
+        mediaRecorder = null;
+        recordedChunks = [];
+        if (objectUrlToRevoke) {
+          URL.revokeObjectURL(objectUrlToRevoke);
+          objectUrlToRevoke = null;
+        }
+        if (mr) {
+          try {
+            mr.stream.getTracks().forEach((t) => t.stop());
+          } catch (_) {}
+        }
+      }
+
+      function pickMime() {
+        const types = [
+          "audio/webm;codecs=opus",
+          "audio/webm",
+          "audio/mp4",
+          "audio/ogg;codecs=opus",
+        ];
+        for (const t of types) {
+          if (MediaRecorder.isTypeSupported(t)) return t;
+        }
+        return "";
+      }
+
+      function updateTimerDisplay() {
+        let ms = elapsedMs;
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+          ms = Date.now() - recStartMs + elapsedMs;
+        }
+        const sec = Math.floor(ms / 1000);
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        $("rec-timer").textContent =
+          String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+      }
+
+      let isRecording = false;
+
+      function prepareRecording(clientId) {
+        cleanupRecording();
+        const c = getClient(clientId);
+        if (!c) {
+          popFrame();
+          return;
+        }
+        isRecording = false;
+        elapsedMs = 0;
+        $("recording-client-label").textContent = c.name;
+        $("rec-comment").value = "";
+        $("btn-rec-save").disabled = true;
+        $("rec-audio").removeAttribute("src");
+        $("rec-audio").load();
+        Players.rec.sync();
+        const btn = $("btn-rec-toggle");
+        btn.textContent = "Запись";
+        btn.classList.remove("recording");
+        updateTimerDisplay();
+      }
+
+      $("btn-rec-toggle").addEventListener("click", async () => {
+        if (!isRecording) {
+          if (!navigator.mediaDevices?.getUserMedia) {
+            alert("Микрофон недоступен в этом браузере.");
+            return;
+          }
+          if (
+            recordedChunks.length > 0 ||
+            objectUrlToRevoke ||
+            (recAudio && recAudio.getAttribute("src"))
+          ) {
+            elapsedMs = 0;
+            recordedChunks = [];
+            if (objectUrlToRevoke) {
+              URL.revokeObjectURL(objectUrlToRevoke);
+              objectUrlToRevoke = null;
+            }
+            if (recAudio) {
+              recAudio.removeAttribute("src");
+              recAudio.load?.();
+            }
+            Players.rec.sync();
+            $("btn-rec-save").disabled = true;
+            updateTimerDisplay();
+          }
+          recordedMime = pickMime();
+          recordedChunks = [];
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(
+              stream,
+              recordedMime ? { mimeType: recordedMime } : undefined
+            );
+            if (mediaRecorder.mimeType) recordedMime = mediaRecorder.mimeType;
+
+            mediaRecorder.ondataavailable = (e) => {
+              if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+              stream.getTracks().forEach((t) => t.stop());
+              mediaRecorder = null;
+
+              if (discardRecordingDraft) {
+                discardRecordingDraft = false;
+                recordedChunks = [];
+                if (objectUrlToRevoke) {
+                  URL.revokeObjectURL(objectUrlToRevoke);
+                  objectUrlToRevoke = null;
+                }
+                return;
+              }
+
+              if (currentFrame().name !== "recording") {
+                if (objectUrlToRevoke) {
+                  URL.revokeObjectURL(objectUrlToRevoke);
+                  objectUrlToRevoke = null;
+                }
+                recordedChunks = [];
+                return;
+              }
+
+              const blob = new Blob(recordedChunks, {
+                type: recordedMime || "audio/webm",
+              });
+              if (objectUrlToRevoke) URL.revokeObjectURL(objectUrlToRevoke);
+              objectUrlToRevoke = URL.createObjectURL(blob);
+              if (recAudio) recAudio.src = objectUrlToRevoke;
+              $("btn-rec-save").disabled = recordedChunks.length === 0;
+              Players.rec.sync();
+            };
+
+            mediaRecorder.start(250);
+            isRecording = true;
+            recStartMs = Date.now();
+            timerInterval = setInterval(updateTimerDisplay, 200);
+            $("btn-rec-toggle").textContent = "Стоп";
+            $("btn-rec-toggle").classList.add("recording");
+          } catch (e) {
+            console.error(e);
+            alert("Не удалось начать запись: " + (e.message || e));
+          }
+        } else {
+          if (mediaRecorder && mediaRecorder.state === "recording") {
+            elapsedMs += Date.now() - recStartMs;
+            mediaRecorder.stop();
+          }
+          if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+          }
+          isRecording = false;
+          $("btn-rec-toggle").textContent = "Запись";
+          $("btn-rec-toggle").classList.remove("recording");
+          updateTimerDisplay();
+        }
+      });
+
+      $("btn-rec-delete").addEventListener("click", () => {
+        if (recordedChunks.length === 0 && (!recAudio || !recAudio.src)) {
+          popFrame();
+          cleanupRecording();
+          return;
+        }
+        if (!confirm("Удалить текущую запись? Несохранённые данные будут потеряны.")) return;
+        cleanupRecording();
+        isRecording = false;
+        elapsedMs = 0;
+        prepareRecording(currentFrame().clientId);
+      });
+
+      $("btn-rec-save").addEventListener("click", () => {
+        const f = currentFrame();
+        if (f.name !== "recording") return;
+        const c = getClient(f.clientId);
+        if (!c || recordedChunks.length === 0) return;
+        const blob = new Blob(recordedChunks, { type: recordedMime || "audio/webm" });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          try {
+            c.recordings.push({
+              id: uid(),
+              audioDataUrl: reader.result,
+              mimeType: recordedMime,
+              createdAt: new Date().toISOString(),
+              comment: $("rec-comment").value.trim(),
+            });
+            saveData();
+            cleanupRecording();
+            popFrame();
+          } catch (err) {
+            console.error(err);
+            alert("Не удалось сохранить (возможно, запись слишком большая).");
+          }
+        };
+        reader.readAsDataURL(blob);
+      });
+
+      function renderComments(clientId) {
+        const c = getClient(clientId);
+        if (!c) {
+          popFrame();
+          return;
+        }
+        const list = $("comments-list");
+        const empty = $("comments-empty");
+        list.innerHTML = "";
+        $("comments-new").value = "";
+        const notes = c.notes.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        if (notes.length === 0) {
+          empty.hidden = false;
+        } else {
+          empty.hidden = true;
+          notes.forEach((n) => {
+            const div = document.createElement("div");
+            div.className = "note-item";
+            div.innerHTML =
+              '<div class="time"></div><div class="text"></div>';
+            div.querySelector(".time").textContent = formatWhen(n.createdAt);
+            div.querySelector(".text").textContent = n.text;
+            list.appendChild(div);
+          });
+        }
+      }
+
+      $("btn-comments-save").addEventListener("click", () => {
+        const f = currentFrame();
+        if (f.name !== "comments") return;
+        const c = getClient(f.clientId);
+        if (!c) return;
+        const text = $("comments-new").value.trim();
+        if (!text) return;
+        c.notes.push({
+          id: uid(),
+          text,
+          createdAt: new Date().toISOString(),
+        });
+        saveData();
+        renderComments(f.clientId);
+      });
+
+      $("play-dialog-close").addEventListener("click", () => {
+        const da = $("play-dialog-audio");
+        da.pause();
+        da.removeAttribute("src");
+        da.load?.();
+        Players.dialog.sync();
+        $("play-dialog").close();
+      });
+
+      $("play-dialog").addEventListener("close", () => {
+        const da = $("play-dialog-audio");
+        da.pause();
+        da.removeAttribute("src");
+        da.load?.();
+        Players.dialog.sync();
+      });
+    })();
+  </script>
+</body>
+</html>
