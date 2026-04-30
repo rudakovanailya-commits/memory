@@ -483,10 +483,77 @@
     .dialog-player-margin {
       margin-bottom: 16px;
     }
+
+    .field label {
       display: block;
       font-size: 13px;
       color: var(--muted);
       margin-bottom: 8px;
+    }
+
+    /* Блок заметки к записи — единая «карточка», не отдельный input */
+
+    #screen-recording .player-bar {
+      margin-bottom: 0;
+    }
+
+    .rec-session-note {
+      margin-top: 18px;
+      margin-bottom: 20px;
+      border-radius: 18px;
+      background: #e9e8f3;
+      box-shadow:
+        0 2px 16px rgba(42, 40, 56, 0.07),
+        0 0 0 1px rgba(107, 106, 158, 0.1);
+      overflow: hidden;
+      transition: box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .rec-session-note:focus-within {
+      background: #eeeef6;
+      box-shadow:
+        0 4px 22px rgba(42, 40, 56, 0.1),
+        0 0 0 2px rgba(107, 106, 158, 0.32);
+    }
+
+    .rec-session-note__caption {
+      display: block;
+      padding: 14px 16px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .rec-session-note__input {
+      display: block;
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 120px;
+      margin: 0;
+      padding: 12px 16px 18px;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      font: inherit;
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--text);
+      resize: vertical;
+    }
+
+    .rec-session-note__input::placeholder {
+      color: #a59eb8;
+      opacity: 1;
+    }
+
+    .rec-session-note__input:focus {
+      outline: none;
+    }
+
+    #screen-recording .row-btns {
+      margin-top: 0;
     }
 
     .field textarea {
@@ -677,9 +744,11 @@
             </div>
           </div>
         </div>
-        <div class="field">
-          <label for="rec-comment">Комментарий к записи</label>
-          <textarea id="rec-comment" placeholder="Кратко: тема сессии, наблюдения…"></textarea>
+        <div class="rec-session-note">
+          <label class="rec-session-note__caption" for="rec-comment">Комментарий к записи</label>
+          <textarea id="rec-comment" class="rec-session-note__input" rows="5" maxlength="8000"
+            spellcheck="true" autocomplete="off"
+            placeholder="Кратко: тема сессии, наблюдения..."></textarea>
         </div>
         <div class="row-btns">
           <button type="button" class="btn btn-danger" id="btn-rec-delete">Удалить</button>
